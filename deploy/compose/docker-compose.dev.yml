@@ -1,0 +1,45 @@
+# ======================================================================
+# 开发模式覆盖配置 — 代码 & 配置挂载到容器，免重建镜像
+#
+# 用法（在 deploy/compose 目录下）:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#     --env-file ../env/.env up -d backend redis postgres
+#
+# 代码修改后只需 restart，无需 rebuild:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml restart backend
+# ======================================================================
+
+services:
+  backend:
+    volumes:
+      - ../../apps/backend:/app                        # 源码挂载
+      - ../../apps/backend/app/config:/app/app/config  # 配置文件挂载（含 llm_providers.yaml）
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    dns:
+      - 114.114.114.114                                # 国内 DNS，解决容器内域名解析问题
+      - 8.8.8.8
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    volumes:
+      - ../../apps/frontend:/app                       # 源码挂载
+      - /app/node_modules                              # 排除 node_modules（使用镜像内的）
+      - /app/.next                                     # 排除构建缓存
+    environment:
+      - API_UPSTREAM=http://backend:8000
+    command: ["npx", "next", "dev", "-H", "0.0.0.0"]
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  postgres:
+    ports:
+      - "5432:5432"

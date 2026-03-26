@@ -1,0 +1,26 @@
+services:
+  nginx:
+    build:
+      context: ../docker/nginx
+      dockerfile: Dockerfile
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
+
+  backend:
+    restart: unless-stopped
+
+  redis:
+    restart: unless-stopped
+
+  postgres:
+    restart: unless-stopped
+

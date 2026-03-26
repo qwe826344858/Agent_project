@@ -1,0 +1,210 @@
+@import "tailwindcss";
+
+/* ===== ThinkingStatus 组件 - 跳动圆点动画 ===== */
+@keyframes thinking-bounce {
+  0% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* ===== 流式光标 - 蓝色方块闪烁 ===== */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.streaming-cursor {
+  display: inline-block;
+  width: 0.5em;
+  height: 1.1em;
+  background-color: #3b82f6;
+  border-radius: 1px;
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+/* ===== Markdown 渲染样式 ===== */
+.markdown-body {
+  line-height: 1.7;
+  word-break: break-word;
+}
+.markdown-body > *:last-child {
+  animation: fade-in-up 0.3s ease-out;
+}
+.markdown-body h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+}
+.markdown-body h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+}
+.markdown-body p {
+  margin: 0.4em 0;
+}
+.markdown-body ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.markdown-body ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.markdown-body li {
+  margin: 0.2em 0;
+}
+.markdown-body strong {
+  font-weight: 600;
+}
+.markdown-body blockquote {
+  border-left: 3px solid #d1d5db;
+  padding-left: 0.8em;
+  color: #6b7280;
+  margin: 0.5em 0;
+}
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5em 0;
+  font-size: 0.9em;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #e5e7eb;
+  padding: 0.4em 0.8em;
+  text-align: left;
+}
+.markdown-body th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+.markdown-body code {
+  background: #f3f4f6;
+  padding: 0.15em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+}
+.markdown-body pre {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 0.8em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+/* ===== 逐段淡入上滑 ===== */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== 产品卡片基础样式 ===== */
+.product-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.product-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+.product-card:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
+}
+
+/* ===== 卡片入场交错动效 ===== */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.product-card-enter {
+  animation: card-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ===== 价格高亮区 ===== */
+.price-section {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* ===== 价格骨架屏 shimmer ===== */
+@keyframes shimmer {
+  0%   { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.price-skeleton {
+  height: 24px;
+  width: 120px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e5e7eb 0%, #f3f4f6 50%, #e5e7eb 100%);
+  background-size: 400px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ===== 横向滚动渐变遮罩 ===== */
+.product-list-wrapper {
+  position: relative;
+}
+.product-list-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, white);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+.product-list-wrapper.scrolled-end::after {
+  opacity: 0;
+}
+
+/* ===== 横向滚动条美化 ===== */
+.product-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.product-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.product-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+.product-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}

@@ -1,0 +1,91 @@
+# ======================================================================
+# LLM 多模型配置
+#
+# 1. providers  — 注册所有可用的模型服务商（启动时全部加载）
+# 2. routing    — 配置各业务阶段使用哪个 provider
+#
+# 新增 provider：在 providers 下追加一条，设好环境变量即可
+# 切换路由：修改 routing 中对应阶段的 provider 名称
+# ======================================================================
+
+# ------ 全局默认 provider（routing 中未指定时的兜底） ------
+default_provider: minimax
+
+# ------ 各业务阶段路由（可独立指定 provider 和模型） ------
+# 不设置 model 则使用该 provider 的 default_model
+routing:
+  intent:                      # 意图识别
+    provider: minimax
+    # model: MiniMax-M2.1      # 可选覆盖
+  query:                       # 搜索词生成
+    provider: minimax
+  answer:                      # 回答生成
+    provider: minimax
+  followup:                    # 追问话术
+    provider: minimax
+
+# ------ Provider 注册表 ------
+# 字段说明：
+#   prefix        - LiteLLM 模型名前缀
+#   default_model - 默认模型名（与 prefix 拼接为 prefix/default_model）
+#   api_key_env   - API Key 环境变量名
+#   api_base_env  - API Base URL 环境变量名
+#   default_base  - api_base 默认值
+#   enabled       - 是否启用（可选，默认 true，设为 false 跳过加载）
+providers:
+
+  minimax:
+    description: "MiniMax（海螺 AI）"
+    prefix: "openai"
+    default_model: "MiniMax-M2.5-highspeed"
+    api_key_env: "MINIMAX_API_KEY"
+    api_base_env: "MINIMAX_API_BASE"
+    default_base: "https://api.minimaxi.com/v1"
+
+  openai:
+    description: "OpenAI"
+    prefix: "openai"
+    default_model: "gpt-4o-mini"
+    api_key_env: "OPENAI_API_KEY"
+    api_base_env: "OPENAI_API_BASE"
+    default_base: "https://api.openai.com/v1"
+
+  deepseek:
+    description: "DeepSeek"
+    prefix: "deepseek"
+    default_model: "deepseek-chat"
+    api_key_env: "DEEPSEEK_API_KEY"
+    api_base_env: "DEEPSEEK_API_BASE"
+    default_base: "https://api.deepseek.com/v1"
+
+  qwen:
+    description: "通义千问（DashScope）"
+    prefix: "openai"
+    default_model: "qwen-plus"
+    api_key_env: "QWEN_API_KEY"
+    api_base_env: "QWEN_API_BASE"
+    default_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+  zhipu:
+    description: "智谱 AI（GLM）"
+    prefix: "openai"
+    default_model: "glm-4-flash"
+    api_key_env: "ZHIPU_API_KEY"
+    api_base_env: "ZHIPU_API_BASE"
+    default_base: "https://open.bigmodel.cn/api/paas/v4"
+
+  moonshot:
+    description: "Moonshot（Kimi）"
+    prefix: "openai"
+    default_model: "moonshot-v1-8k"
+    api_key_env: "MOONSHOT_API_KEY"
+    api_base_env: "MOONSHOT_API_BASE"
+    default_base: "https://api.moonshot.cn/v1"
+
+  anthropic:
+    description: "Anthropic（Claude）"
+    prefix: "anthropic"
+    default_model: "claude-sonnet-4-20250514"
+    api_key_env: "ANTHROPIC_API_KEY"
+    api_base_env: "ANTHROPIC_API_BASE"
+    default_base: "https://api.anthropic.com"

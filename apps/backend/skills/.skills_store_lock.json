@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "doubao-chat": {
+      "name": "Doubao Chat",
+      "zip_url": "https://lightmake.site/api/v1/download?slug=doubao-chat",
+      "source": "skillhub",
+      "version": "1.0.0"
+    }
+  }
+}
