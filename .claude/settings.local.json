@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Bash(git rm:*)",
+      "Bash(git push:*)",
+      "Bash(git ls-tree:*)"
     ]
   }
 }

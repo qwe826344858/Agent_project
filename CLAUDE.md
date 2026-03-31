@@ -105,6 +105,14 @@ cd apps/frontend && npm test
 
 新增平台：在 `app/services/platform_apis/` 下新建文件，继承 `PlatformAPI`，实现 `search()` 方法，在 `__init__.py` 的 `PLATFORMS` 列表注册。
 
+## 回归验证
+
+每次阶段性功能迭代完成后，必须按 `docs/回归验证功能点清单.md` 执行回归：
+1. 后端全量测试：`cd apps/backend && python3 -m pytest tests/ -v`（当前 121 个用例）
+2. 前端全量测试：`cd apps/frontend && npm test`（当前 18 个用例）
+3. 14 场景端到端回归：`python3 persona_test_v2.py`
+4. 结果记录到清单文档的"回归记录"表
+
 ## Coding Conventions
 
 - **Python**：PEP 8，4 空格缩进，类型注解，中文注释
@@ -126,3 +134,11 @@ cd apps/frontend && npm test
 ### agent-teams-module-delivery
 
 多 Agent 协作开发技能（`skills/agent-teams-module-delivery/SKILL.md`）。流程：理解文档 → Leader 拆分任务 → Agent 并行开发 → 自测 → 验证 → 归档。每个模块必须"代码 + 注释 + 测试 + 结果记录"四项齐全。
+
+### add-insurance-platform
+
+新增保险平台 API 接入技能（`skills/add-insurance-platform/SKILL.md`）。用户提供 curl 示例和响应 JSON，自动生成平台适配器代码、注册到 PLATFORMS、编写测试并验证通过。
+
+### regression-verify
+
+回归验证技能（`skills/regression-verify/SKILL.md`）。阶段性迭代完成后调用，自动执行：全量单元测试 → 端到端 14 角色回归 → 逐项验证 → 更新回归记录。确保历史功能点不被破坏。

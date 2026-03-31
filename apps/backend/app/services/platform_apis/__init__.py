@@ -219,11 +219,16 @@ def _filter_by_age(
     # 提取用户年龄
     age_match = AGE_RE.search(user_input)
     if not age_match:
-        # 无年龄信息，根据人群关键词推断
+        # 无年龄信息，根据人群/职业关键词推断
         if any(kw in user_input for kw in ("宝宝", "孩子", "小孩", "儿童", "婴儿", "新生儿")):
             user_age_group = "child"
         elif any(kw in user_input for kw in ("退休", "老人", "老年", "父母", "爸妈")):
             user_age_group = "senior"
+        elif any(kw in user_input for kw in (
+            "大学生", "刚毕业", "应届", "上班族", "骑手", "外卖",
+            "自由职业", "打工", "白领", "程序员", "怀孕", "产后",
+        )):
+            user_age_group = "adult"
         else:
             return products  # 无法判断年龄，不过滤
     else:

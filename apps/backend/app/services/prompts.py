@@ -55,7 +55,8 @@ INTENT_PROMPT_TEMPLATE = """\
 【重要】
 1. 如果用户已经提供了年龄、保障类型等关键信息，即使缺少预算也不需要追问，应直接进行搜索推荐。
 2. 如果用户提到了预算金额（如"预算1500"、"500块"），无论句式是陈述句还是疑问句（如"是不是可以？"、"能买到吗？"、"有没有推荐？"），都应判定为 product_recommendation。
-3. 如果用户提到具体险种名称（如"防癌险"、"重疾险"）且表达了购买意愿（如"想买"、"有没有"、"推荐"、"可以买吗"），应判定为 product_recommendation 而非 knowledge_explain。
+3. 如果用户提到具体险种名称且表达了购买意愿（如"想买"、"有没有"、"推荐"、"可以买吗"），应判定为 product_recommendation 而非 knowledge_explain。
+4. 但如果用户的核心意图是**对比或解释概念**（如"A和B有什么区别"、"什么是XXX"），即使提到了具体险种名称，仍应判定为 knowledge_explain 或 comparison，不要判定为 product_recommendation。
 
 请严格以 JSON 格式输出，不要包含任何额外文本：
 {{
