@@ -22,6 +22,12 @@ export interface SendChatMessageOptions {
   requestId?: string;
   /** AbortSignal，用于取消正在进行的请求 */
   signal?: AbortSignal;
+  /** 动作类型（如查看产品详情） */
+  action?: string;
+  /** 产品投保链接 */
+  productUrl?: string;
+  /** 产品名称 */
+  productName?: string;
 }
 
 /**
@@ -49,6 +55,9 @@ export async function sendChatMessage(
   if (options?.requestId) {
     body.requestId = options.requestId;
   }
+  if (options?.action) body.action = options.action;
+  if (options?.productUrl) body.productUrl = options.productUrl;
+  if (options?.productName) body.productName = options.productName;
 
   const response = await fetch(url, {
     method: "POST",

@@ -7,6 +7,8 @@ import ChatInput from "@/components/ChatInput";
 import ChatMessageList from "@/components/ChatMessageList";
 import ThinkingStatus from "@/components/ThinkingStatus";
 import SuggestionList from "@/components/SuggestionList";
+import DutyDetailCard from "@/components/DutyDetailCard";
+import ProductPanel from "@/components/ProductPanel";
 
 /** 生成唯一消息 ID */
 function genId(): string {
@@ -32,6 +34,13 @@ export default function ChatPage() {
   const [thinkingStage, setThinkingStage] = useState<ThinkingStage | null>(null);
   /** 是否正在请求中 */
   const [isLoading, setIsLoading] = useState(false);
+  /** 当前推荐的产品列表（吸顶面板用） */
+  const [currentProducts, setCurrentProducts] = useState<ProductCard[]>([]);
+  /** 当前选中的产品（追问时自动关联） */
+  const [selectedProduct, setSelectedProduct] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
   /** 用于取消请求的 AbortController */
   const abortRef = useRef<AbortController | null>(null);
   /** 记录上一次发送的消息，用于重试 */
@@ -128,13 +137,13 @@ export default function ChatPage() {
               setIsLoading(false);
             },
             onProducts: (data) => {
-              updateAssistantMessage((prev) => ({
-                ...prev,
-                products: (data.items as (ProductCard & { price_label?: string })[]).map((p) => ({
-                  ...p,
-                  priceLabel: p.price_label || p.priceLabel || "加载中",
-                })),
+              // 更新吸顶面板产品列表（不再存到消息中）
+              const items = (data.items as (ProductCard & { price_label?: string })[]).map((p) => ({
+                ...p,
+                priceLabel: p.price_label || p.priceLabel || "加载中",
               }));
+              setCurrentProducts(items);
+              setSelectedProduct(null); // 新推荐到达时清空选中
             },
             onProductsUpdate: (data) => {
               updateAssistantMessage((prev) => ({
@@ -163,7 +172,14 @@ export default function ChatPage() {
               setIsLoading(false);
             },
           },
-          { signal: controller.signal },
+          {
+            signal: controller.signal,
+            ...(selectedProduct ? {
+              action: "product_followup",
+              productUrl: selectedProduct.url,
+              productName: selectedProduct.name,
+            } : {}),
+          },
         );
       } catch (err: unknown) {
         // 用户主动取消时不显示错误
@@ -178,7 +194,7 @@ export default function ChatPage() {
         setIsLoading(false);
       }
     },
-    [updateAssistantMessage],
+    [updateAssistantMessage, selectedProduct],
   );
 
   /** 重试上一次发送 */
@@ -202,6 +218,93 @@ export default function ChatPage() {
     },
     [handleSend],
   );
+
+  /** 点击"查看保障详情"按钮 */
+  const handleViewDetail = useCallback(
+    async (productUrl: string, productName: string) => {
+      setSelectedProduct({ url: productUrl, name: productName });
+      // 取消上一个未完成的请求
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // 添加空的助手消息
+      const assistantMsg: ChatMessage = {
+        id: genId(),
+        role: "assistant",
+        content: "",
+        isStreaming: true,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setIsLoading(true);
+      setThinkingStage("reading");
+
+      try {
+        await sendChatMessage(
+          "",
+          {
+            onStatus: (data) => {
+              setThinkingStage(data.stage as ThinkingStage);
+            },
+            onDetailItems: (data) => {
+              updateAssistantMessage((prev) => ({
+                ...prev,
+                duties: data.duties,
+                detailProductName: data.product_name,
+              }));
+            },
+            onDelta: (data) => {
+              setThinkingStage(null);
+              updateAssistantMessage((prev) => ({
+                ...prev,
+                content: prev.content + data.text,
+              }));
+            },
+            onDone: () => {
+              updateAssistantMessage((prev) => ({
+                ...prev,
+                isStreaming: false,
+              }));
+              setThinkingStage(null);
+              setIsLoading(false);
+            },
+            onError: (data) => {
+              updateAssistantMessage((prev) => ({
+                ...prev,
+                isStreaming: false,
+                error: data.message || "请求出错，请重试",
+              }));
+              setThinkingStage(null);
+              setIsLoading(false);
+            },
+          },
+          {
+            signal: controller.signal,
+            action: "product_detail",
+            productUrl,
+            productName,
+          },
+        );
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        updateAssistantMessage((prev) => ({
+          ...prev,
+          isStreaming: false,
+          error: "网络异常，请检查连接后重试",
+        }));
+        setThinkingStage(null);
+        setIsLoading(false);
+      }
+    },
+    [updateAssistantMessage],
+  );
+
+  /** 选中/取消选中产品 */
+  const handleSelectProduct = useCallback((url: string, name: string) => {
+    setSelectedProduct((prev) =>
+      prev?.url === url ? null : { url, name }
+    );
+  }, []);
 
   /** 是否显示推荐问题区域（仅在没有消息且非加载状态时） */
   const showSuggestions = messages.length === 0;
@@ -235,7 +338,15 @@ export default function ChatPage() {
         ) : (
           /* 对话中：消息列表 */
           <>
-            <ChatMessageList messages={messages} />
+            {/* 产品吸顶面板 */}
+            <ProductPanel
+              products={currentProducts}
+              selectedUrl={selectedProduct?.url ?? null}
+              onSelect={handleSelectProduct}
+              onViewDetail={handleViewDetail}
+            />
+
+            <ChatMessageList messages={messages} onViewDetail={handleViewDetail} />
 
             {/* 思考状态提示 */}
             {thinkingStage && (

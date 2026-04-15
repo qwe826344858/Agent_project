@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ChatMessage, SourceItem } from "@/types/chat";
-import ProductCardList from "@/components/ProductCardList";
+import DutyDetailCard from "@/components/DutyDetailCard";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
+  onViewDetail?: (url: string, name: string) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface ChatMessageListProps {
  * - 助手消息使用 MarkdownRenderer 渲染流式文本
  * - 自动滚动：节流 + 用户手动上滚暂停
  */
-export default function ChatMessageList({ messages }: ChatMessageListProps) {
+export default function ChatMessageList({ messages, onViewDetail }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollThrottleRef = useRef<number>(0);
@@ -55,7 +56,7 @@ export default function ChatMessageList({ messages }: ChatMessageListProps) {
           {msg.role === "user" ? (
             <UserBubble message={msg} />
           ) : (
-            <AssistantBubble message={msg} />
+            <AssistantBubble message={msg} onViewDetail={onViewDetail} />
           )}
         </div>
       ))}
@@ -86,19 +87,19 @@ function UserBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-/** 助手消息气泡，包含产品卡片、Markdown 文本、来源和免责声明 */
-function AssistantBubble({ message }: { message: ChatMessage }) {
+/** 助手消息气泡，包含产品卡片、保障详情、Markdown 文本、来源和免责声明 */
+function AssistantBubble({ message, onViewDetail }: { message: ChatMessage; onViewDetail?: (url: string, name: string) => void }) {
   const hasError = !!message.error;
   const hasSources = message.sources && message.sources.length > 0;
   const hasDisclaimer = !!message.disclaimer;
-  const hasProducts = message.products && message.products.length > 0;
-
   return (
     <div className="flex flex-col items-start">
-      {/* 产品推荐卡片（在文字回答之前展示） */}
-      {hasProducts && (
+      {/* 产品推荐已在吸顶面板展示 */}
+
+      {/* 产品保障详情卡片 */}
+      {message.duties && message.duties.length > 0 && (
         <div className="mr-auto max-w-[95%] mb-2">
-          <ProductCardList products={message.products!} />
+          <DutyDetailCard productName={message.detailProductName || "产品"} duties={message.duties} />
         </div>
       )}
 

@@ -41,7 +41,7 @@ def _make_mock_orchestrator(events: list[dict]):
 
     events 中每个元素格式: {"event": "...", "data": {...}}
     """
-    async def mock_run_chat_flow(message, request_id=""):
+    async def mock_run_chat_flow(message, request_id="", action=None, product_url=None, product_name=None):
         for evt in events:
             yield evt
 
@@ -129,7 +129,7 @@ class TestChatInputValidation:
         assert body["error"]["code"] == "INVALID_ARGUMENT"
 
     async def test_chat_missing_message(self):
-        """发送空 JSON {}，验证返回 422（Pydantic 校验失败）"""
+        """发送空 JSON {}，无 action 时验证返回 400（message 为空）"""
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -138,7 +138,7 @@ class TestChatInputValidation:
                 json={},
             )
 
-        assert response.status_code == 422
+        assert response.status_code == 400
 
 
 class TestChatBusinessScenarios:

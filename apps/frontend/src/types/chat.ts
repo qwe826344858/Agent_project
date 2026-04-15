@@ -12,7 +12,7 @@ export interface SourceItem {
 export type ThinkingStage = "analyzing" | "searching" | "reading" | "answering";
 
 /** SSE 事件类型 */
-export type SSEEventType = "status" | "delta" | "sources" | "disclaimer" | "done" | "error" | "products" | "products_update";
+export type SSEEventType = "status" | "delta" | "sources" | "disclaimer" | "done" | "error" | "products" | "products_update" | "detail_items";
 
 /** SSE 事件载荷 */
 export interface SSEStatusPayload {
@@ -55,6 +55,20 @@ export interface ProductCard {
   brief: string;
 }
 
+/** 单项保障 — 产品详情提取 */
+export interface DutyItem {
+  name: string;
+  coverage: string;
+  description: string;
+  is_optional: boolean;
+}
+
+/** SSE detail_items 事件载荷 */
+export interface SSEDetailItemsPayload {
+  product_name: string;
+  duties: DutyItem[];
+}
+
 /** SSE products 事件载荷 */
 export interface SSEProductsPayload {
   items: ProductCard[];
@@ -75,6 +89,8 @@ export interface ChatMessage {
   isStreaming?: boolean;
   error?: string;
   products?: ProductCard[];
+  duties?: DutyItem[];  // 新增：产品保障详情
+  detailProductName?: string;  // 保障详情对应的产品名称
 }
 
 /** 推荐问题响应 */

@@ -6,6 +6,7 @@ import ProductCard from "@/components/ProductCard";
 
 interface ProductCardListProps {
   products: ProductCardType[];
+  onViewDetail?: (url: string, name: string) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface ProductCardListProps {
  * - 滚动条美化
  * - 空结果友好提示
  */
-export default function ProductCardList({ products }: ProductCardListProps) {
+export default function ProductCardList({ products, onViewDetail }: ProductCardListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrolledEnd, setScrolledEnd] = useState(false);
   const [showFade, setShowFade] = useState(false);
@@ -67,7 +68,7 @@ export default function ProductCardList({ products }: ProductCardListProps) {
           onScroll={handleScroll}
         >
           {products.map((product, index) => (
-            <ProductCard key={product.id} product={product} index={index} />
+            <ProductCard key={product.id} product={product} index={index} onViewDetail={onViewDetail} />
           ))}
         </div>
       </div>

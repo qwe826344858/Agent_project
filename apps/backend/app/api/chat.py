@@ -26,8 +26,8 @@ async def chat(request: Request, body: ChatRequest):
     - done: 完成
     - error: 错误
     """
-    # 参数校验
-    if not body.message or not body.message.strip():
+    # 参数校验：有 action 时允许 message 为空
+    if not body.action and (not body.message or not body.message.strip()):
         raise InvalidArgumentError("message 不能为空")
 
     # 生成 requestId
@@ -38,8 +38,11 @@ async def chat(request: Request, body: ChatRequest):
         # 通过适配层获取当前编排器实现
         orchestrator = get_orchestrator()
         async for event_dict in orchestrator.run_chat_flow(
-            message=body.message.strip(),
+            message=body.message.strip() if body.message else "",
             request_id=request_id,
+            action=body.action,
+            product_url=body.product_url,
+            product_name=body.product_name,
         ):
             event_type = event_dict.get("event", "delta")
             event_data = event_dict.get("data", {})
