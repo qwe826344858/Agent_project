@@ -27,3 +27,7 @@ Thumbs.db
 # Next.js
 .next/
 out/
+
+# Local scratch
+test/
+apps/frontend/tsconfig.tsbuildinfo
