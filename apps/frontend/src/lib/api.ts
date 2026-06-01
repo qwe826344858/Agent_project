@@ -12,10 +12,96 @@ import { createSSEParser, type SSEHandlers } from "@/lib/sse-parser";
  * 需要前端直连后端 API。
  * 开发模式下通过 NEXT_PUBLIC_API_BASE_URL 配置后端地址。
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || (typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:8000` : "");
+const CONFIGURED_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "";
+const CONFIGURED_LEGACY_CHAT_URL =
+  process.env.NEXT_PUBLIC_LEGACY_CHAT_URL?.trim() || "/api/chat";
+const CONFIGURED_AGENT_CHAT_URL =
+  process.env.NEXT_PUBLIC_AGENT_CHAT_URL?.trim() || "/api/agent/chat";
+const DEFAULT_API_PORT = "34567";
+const SUGGESTIONS_TIMEOUT_MS = 5000;
+
+function isLoopbackHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function isAbsoluteUrl(url: string): boolean {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(url);
+}
+
+function normalizeApiBaseUrl(baseUrl: string): string {
+  if (!baseUrl) return "";
+  if (isAbsoluteUrl(baseUrl)) {
+    return baseUrl;
+  }
+
+  return `http://${baseUrl}`;
+}
+
+function getBrowserApiBaseUrl(): string {
+  const pageHost = window.location.hostname;
+
+  if (!CONFIGURED_API_BASE_URL) {
+    return `${window.location.protocol}//${pageHost}:${DEFAULT_API_PORT}`;
+  }
+
+  try {
+    const url = new URL(normalizeApiBaseUrl(CONFIGURED_API_BASE_URL), window.location.origin);
+    const configuredHost = url.hostname;
+    const pointsToInternalDockerHost =
+      configuredHost === "backend" || configuredHost === "0.0.0.0";
+    const pointsToLocalhostFromRemotePage =
+      isLoopbackHost(configuredHost) && !isLoopbackHost(pageHost);
+
+    if (pointsToInternalDockerHost || pointsToLocalhostFromRemotePage) {
+      url.protocol = window.location.protocol;
+      url.hostname = pageHost;
+      url.port = pointsToInternalDockerHost ? DEFAULT_API_PORT : url.port || DEFAULT_API_PORT;
+    }
+
+    return url.origin;
+  } catch {
+    return `${window.location.protocol}//${pageHost}:${DEFAULT_API_PORT}`;
+  }
+}
+
+function getApiBaseUrl(): string {
+  if (typeof window === "undefined") {
+    return normalizeApiBaseUrl(CONFIGURED_API_BASE_URL).replace(/\/$/, "");
+  }
+
+  return getBrowserApiBaseUrl().replace(/\/$/, "");
+}
+
+export function buildApiUrl(path: string): string {
+  return `${getApiBaseUrl()}${path}`;
+}
+
+export type ChatBackendMode = "legacy_chat" | "agent_chat";
+
+function normalizeEndpointUrl(endpoint: string): string {
+  const trimmedEndpoint = endpoint.trim();
+  if (isAbsoluteUrl(trimmedEndpoint)) {
+    return trimmedEndpoint;
+  }
+
+  const path = trimmedEndpoint.startsWith("/") ? trimmedEndpoint : `/${trimmedEndpoint}`;
+  return buildApiUrl(path);
+}
+
+function getChatEndpointUrl(backendMode: ChatBackendMode): string {
+  return normalizeEndpointUrl(
+    backendMode === "agent_chat" ? CONFIGURED_AGENT_CHAT_URL : CONFIGURED_LEGACY_CHAT_URL
+  );
+}
 
 /** sendChatMessage 的可选配置 */
 export interface SendChatMessageOptions {
+  /** 后端聊天链路，默认使用旧链路 */
+  backendMode?: ChatBackendMode;
+  /** 匿名用户 ID，用于后端关联当前浏览器用户 */
+  anonymousId?: string;
+  /** 当前聊天会话 ID，用于后端保存和恢复历史 */
+  chatSessionId?: string;
   /** 会话 ID，用于关联多轮对话 */
   sessionId?: string;
   /** 请求 ID，用于追踪和取消请求 */
@@ -30,27 +116,23 @@ export interface SendChatMessageOptions {
   productName?: string;
 }
 
-/**
- * 发送聊天消息并消费 SSE 流式响应
- *
- * 调用 POST /api/chat 接口，将用户消息发送到后端，并通过 SSE handlers
- * 实时接收并处理流式返回的各类事件。
- *
- * @param message - 用户输入的聊天消息
- * @param handlers - SSE 事件处理回调集合
- * @param options - 可选配置（sessionId、requestId、signal）
- */
-export async function sendChatMessage(
+function buildLegacyChatRequestBody(
   message: string,
-  handlers: SSEHandlers,
   options?: SendChatMessageOptions
-): Promise<void> {
-  const url = `${API_BASE_URL}/api/chat`;
-
-  // 构建请求体
-  const body: Record<string, string> = { message };
+): Record<string, unknown> {
+  const body: Record<string, unknown> = { message };
+  if (options?.anonymousId) {
+    body.anonymous_id = options.anonymousId;
+  }
+  if (options?.chatSessionId) {
+    body.chat_session_id = options.chatSessionId;
+    body.sessionId = options.chatSessionId;
+  }
   if (options?.sessionId) {
     body.sessionId = options.sessionId;
+    if (!body.chat_session_id) {
+      body.chat_session_id = options.sessionId;
+    }
   }
   if (options?.requestId) {
     body.requestId = options.requestId;
@@ -58,6 +140,62 @@ export async function sendChatMessage(
   if (options?.action) body.action = options.action;
   if (options?.productUrl) body.productUrl = options.productUrl;
   if (options?.productName) body.productName = options.productName;
+
+  return body;
+}
+
+function buildAgentChatRequestBody(
+  message: string,
+  options?: SendChatMessageOptions
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    message,
+    anonymous_id: options?.anonymousId ?? "",
+    chat_session_id: options?.chatSessionId ?? options?.sessionId ?? "",
+    stream: true,
+    metadata: { source: "web" },
+  };
+
+  if (options?.requestId) {
+    body.requestId = options.requestId;
+  }
+  if (options?.action) body.action = options.action;
+  if (options?.productUrl) body.product_url = options.productUrl;
+  if (options?.productName) body.product_name = options.productName;
+
+  return body;
+}
+
+function buildChatRequestBody(
+  message: string,
+  backendMode: ChatBackendMode,
+  options?: SendChatMessageOptions
+): Record<string, unknown> {
+  if (backendMode === "agent_chat") {
+    return buildAgentChatRequestBody(message, options);
+  }
+
+  return buildLegacyChatRequestBody(message, options);
+}
+
+/**
+ * 发送聊天消息并消费 SSE 流式响应
+ *
+ * 调用配置的聊天接口，将用户消息发送到后端，并通过 SSE handlers
+ * 实时接收并处理流式返回的各类事件。默认使用旧链路 /api/chat。
+ *
+ * @param message - 用户输入的聊天消息
+ * @param handlers - SSE 事件处理回调集合
+ * @param options - 可选配置（backendMode、sessionId、requestId、signal）
+ */
+export async function sendChatMessage(
+  message: string,
+  handlers: SSEHandlers,
+  options?: SendChatMessageOptions
+): Promise<void> {
+  const backendMode = options?.backendMode ?? "legacy_chat";
+  const url = getChatEndpointUrl(backendMode);
+  const body = buildChatRequestBody(message, backendMode, options);
 
   const response = await fetch(url, {
     method: "POST",
@@ -101,19 +239,29 @@ export async function sendChatMessage(
  * @returns 推荐问题列表
  */
 export async function fetchSuggestions(): Promise<string[]> {
-  const url = `${API_BASE_URL}/api/suggestions`;
+  const url = buildApiUrl("/api/suggestions");
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(
+    () => controller.abort(),
+    SUGGESTIONS_TIMEOUT_MS,
+  );
 
-  const response = await fetch(url, {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(`获取推荐问题失败 (${response.status})`);
+    if (!response.ok) {
+      throw new Error(`获取推荐问题失败 (${response.status})`);
+    }
+
+    const data: SuggestionsResponse = await response.json();
+    return data.suggestions;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
   }
-
-  const data: SuggestionsResponse = await response.json();
-  return data.suggestions;
 }

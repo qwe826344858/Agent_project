@@ -27,7 +27,7 @@ export default function SuggestionList({
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl py-6 px-4">
+    <div className="mx-auto w-full max-w-2xl px-0 py-4 sm:px-4 sm:py-6">
       {/* 引导文案 */}
       <p className="mb-3 text-center text-sm text-gray-500">
         您可以试试问我
@@ -39,7 +39,7 @@ export default function SuggestionList({
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-12 rounded-xl bg-gray-200 animate-pulse"
+              className="h-11 animate-pulse rounded-lg bg-gray-200 sm:h-12 sm:rounded-xl"
             />
           ))}
         </div>
@@ -51,7 +51,7 @@ export default function SuggestionList({
               <button
                 type="button"
                 onClick={() => onSelect(question)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm text-gray-600 transition-colors hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
+                className="w-full cursor-pointer rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-left text-sm text-gray-600 transition-colors hover:border-blue-300 hover:bg-blue-50 sm:rounded-xl sm:px-4 sm:py-3"
               >
                 {question}
               </button>

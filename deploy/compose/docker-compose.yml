@@ -3,10 +3,17 @@ services:
     build:
       context: ../../apps/frontend
       dockerfile: ../../deploy/docker/frontend/Dockerfile
+      args:
+        API_UPSTREAM: ${API_UPSTREAM:-http://172.17.0.1:34567}
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:34567}
+        NEXT_PUBLIC_LEGACY_CHAT_URL: ${NEXT_PUBLIC_LEGACY_CHAT_URL:-/api/chat}
+        NEXT_PUBLIC_AGENT_CHAT_URL: ${NEXT_PUBLIC_AGENT_CHAT_URL:-/api/agent/chat}
     environment:
       - NODE_ENV=${NODE_ENV}
-      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-      - API_UPSTREAM=${API_UPSTREAM:-http://backend:8000}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:34567}
+      - NEXT_PUBLIC_LEGACY_CHAT_URL=${NEXT_PUBLIC_LEGACY_CHAT_URL:-/api/chat}
+      - NEXT_PUBLIC_AGENT_CHAT_URL=${NEXT_PUBLIC_AGENT_CHAT_URL:-/api/agent/chat}
+      - API_UPSTREAM=${API_UPSTREAM:-http://172.17.0.1:34567}
     depends_on:
       backend:
         condition: service_healthy
