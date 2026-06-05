@@ -14,29 +14,35 @@ export type ThinkingStage = "analyzing" | "searching" | "reading" | "answering";
 /** SSE 事件类型 */
 export type SSEEventType = "status" | "delta" | "sources" | "disclaimer" | "done" | "error" | "products" | "products_update" | "detail_items";
 
+/** Agent SSE 可选追踪字段 */
+export interface SSEAgentTraceFields {
+  agent_id?: string;
+  trace_id?: string;
+}
+
 /** SSE 事件载荷 */
-export interface SSEStatusPayload {
+export interface SSEStatusPayload extends SSEAgentTraceFields {
   stage: ThinkingStage;
   message: string;
 }
 
-export interface SSEDeltaPayload {
+export interface SSEDeltaPayload extends SSEAgentTraceFields {
   text: string;
 }
 
-export interface SSESourcesPayload {
+export interface SSESourcesPayload extends SSEAgentTraceFields {
   items: SourceItem[];
 }
 
-export interface SSEDisclaimerPayload {
+export interface SSEDisclaimerPayload extends SSEAgentTraceFields {
   text: string;
 }
 
-export interface SSEDonePayload {
+export interface SSEDonePayload extends SSEAgentTraceFields {
   requestId: string;
 }
 
-export interface SSEErrorPayload {
+export interface SSEErrorPayload extends SSEAgentTraceFields {
   code: string;
   message: string;
   requestId?: string;
@@ -64,18 +70,18 @@ export interface DutyItem {
 }
 
 /** SSE detail_items 事件载荷 */
-export interface SSEDetailItemsPayload {
+export interface SSEDetailItemsPayload extends SSEAgentTraceFields {
   product_name: string;
   duties: DutyItem[];
 }
 
 /** SSE products 事件载荷 */
-export interface SSEProductsPayload {
+export interface SSEProductsPayload extends SSEAgentTraceFields {
   items: ProductCard[];
 }
 
 /** SSE products_update 事件载荷 */
-export interface SSEProductsUpdatePayload {
+export interface SSEProductsUpdatePayload extends SSEAgentTraceFields {
   items: Partial<ProductCard>[];
 }
 
@@ -84,6 +90,7 @@ export interface ChatMessage {
   id: string;
   role: MessageRole;
   content: string;
+  createdAt?: string;
   sources?: SourceItem[];
   disclaimer?: string;
   isStreaming?: boolean;

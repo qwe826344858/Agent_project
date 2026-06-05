@@ -16,9 +16,9 @@ export default function DutyDetailCard({ productName, duties }: DutyDetailCardPr
   if (!duties || duties.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-blue-100 bg-blue-50/30 p-4 max-w-[90%]">
+    <div className="w-full max-w-none rounded-lg border border-blue-100 bg-blue-50/30 p-3 sm:rounded-xl sm:p-4">
       {/* 标题 */}
-      <h3 className="text-sm font-semibold text-gray-800 mb-3">
+      <h3 className="mb-3 text-sm font-semibold text-gray-800">
         📋 {productName} — 保障一览
       </h3>
 
@@ -31,7 +31,7 @@ export default function DutyDetailCard({ productName, duties }: DutyDetailCardPr
           >
             {/* 必选/可选标签 */}
             <span
-              className={`shrink-0 mt-0.5 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+              className={`mt-0.5 inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-xs font-medium ${
                 duty.is_optional
                   ? "bg-gray-100 text-gray-500"
                   : "bg-blue-100 text-blue-600"
@@ -41,13 +41,13 @@ export default function DutyDetailCard({ productName, duties }: DutyDetailCardPr
             </span>
 
             {/* 名称 */}
-            <span className="flex-1 text-gray-700 min-w-0">
+            <span className="min-w-0 flex-1 text-gray-700">
               {duty.name}
             </span>
 
             {/* 额度 */}
             {duty.coverage && (
-              <span className="shrink-0 font-medium text-green-600">
+              <span className="max-w-[42%] shrink-0 break-words text-right font-medium text-green-600 sm:max-w-none">
                 {duty.coverage}
               </span>
             )}
