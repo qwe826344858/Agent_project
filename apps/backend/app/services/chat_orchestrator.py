@@ -67,7 +67,10 @@ class ChatOrchestrator:
     """
 
     async def run_stream(
-        self, message: str, request_id: str = ""
+        self, message: str, request_id: str = "",
+        action: str | None = None,
+        product_url: str | None = None,
+        product_name: str | None = None,
     ) -> AsyncGenerator[dict, None]:
         """
         流式执行完整对话链路，yield SSE 事件字典。
@@ -85,6 +88,32 @@ class ChatOrchestrator:
         ctx = ChatContext(message=message, request_id=request_id)
 
         try:
+            # ---- action 路由：跳过意图识别，直达 Skill ----
+            if action == "product_detail" and product_url:
+                from app.services.product_detail_skill import ProductDetailSkill
+                skill = ProductDetailSkill()
+                async for event in skill.run(
+                    product_url=product_url,
+                    product_name=product_name or "",
+                    user_question=message,
+                ):
+                    yield event
+                yield {"event": "done", "data": {"requestId": request_id}}
+                return
+
+            # ---- action 路由：产品追问，从缓存读取保障信息 + LLM 回答 ----
+            if action == "product_followup" and product_url:
+                from app.services.product_detail_skill import ProductDetailSkill
+                skill = ProductDetailSkill()
+                async for event in skill.run(
+                    product_url=product_url,
+                    product_name=product_name or "",
+                    user_question=message,
+                ):
+                    yield event
+                yield {"event": "done", "data": {"requestId": request_id}}
+                return
+
             # ---- 阶段 1：并行启动意图识别和平台搜索 ----
             yield {"event": "status", "data": {"stage": "analyzing", "message": "正在分析您的问题..."}}
 

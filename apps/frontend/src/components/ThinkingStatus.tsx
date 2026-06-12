@@ -1,30 +1,36 @@
 "use client";
 
-import { ThinkingStage } from "@/types/chat";
+import type { ThinkingStage } from "@/types/chat";
 
 /** 组件属性 */
 interface ThinkingStatusProps {
   stage: ThinkingStage | null;
+  message?: string | null;
 }
 
 /** stage 到中文文案的映射 */
-const stageTextMap: Record<ThinkingStage, string> = {
+const stageTextMap: Record<string, string> = {
   analyzing: "正在分析您的问题...",
   searching: "正在搜索保险产品...",
   reading: "正在整理搜索结果...",
   answering: "正在生成选购建议，您可以先浏览上方产品...",
+  reasoning: "正在规划下一步...",
+  planning: "正在规划下一步...",
+  tool_running: "正在调用工具...",
+  tool_calling: "正在调用工具...",
+  selecting_tool: "正在选择工具...",
 };
 
 /**
  * 思考状态提示组件
  * 根据当前 stage 显示对应的中文状态文案，并附带跳动圆点加载动画。
- * stage 为 null 或 undefined 时不渲染任何内容。
+ * stage 和 message 都为空时不渲染任何内容。
  */
-export default function ThinkingStatus({ stage }: ThinkingStatusProps) {
-  // stage 为空时不渲染
-  if (!stage) return null;
+export default function ThinkingStatus({ stage, message }: ThinkingStatusProps) {
+  // stage 和 message 都为空时不渲染
+  if (!stage && !message) return null;
 
-  const text = stageTextMap[stage];
+  const text = message?.trim() || (stage ? stageTextMap[stage] || stage : "");
 
   return (
     <div className="flex items-center gap-2 text-gray-500 text-sm">

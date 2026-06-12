@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { ChatMessage, SourceItem } from "@/types/chat";
-import ProductCardList from "@/components/ProductCardList";
+import DutyDetailCard from "@/components/DutyDetailCard";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];
+  onViewDetail?: (url: string, name: string) => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface ChatMessageListProps {
  * - 助手消息使用 MarkdownRenderer 渲染流式文本
  * - 自动滚动：节流 + 用户手动上滚暂停
  */
-export default function ChatMessageList({ messages }: ChatMessageListProps) {
+export default function ChatMessageList({ messages, onViewDetail }: ChatMessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollThrottleRef = useRef<number>(0);
@@ -47,7 +48,7 @@ export default function ChatMessageList({ messages }: ChatMessageListProps) {
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto p-4 space-y-4"
+      className="flex-1 space-y-3 overflow-y-auto p-3 sm:space-y-4 sm:p-4"
       onScroll={handleScroll}
     >
       {messages.map((msg) => (
@@ -55,7 +56,7 @@ export default function ChatMessageList({ messages }: ChatMessageListProps) {
           {msg.role === "user" ? (
             <UserBubble message={msg} />
           ) : (
-            <AssistantBubble message={msg} />
+            <AssistantBubble message={msg} onViewDetail={onViewDetail} />
           )}
         </div>
       ))}
@@ -71,7 +72,7 @@ function UserBubble({ message }: { message: ChatMessage }) {
   return (
     <div className="flex justify-end">
       <div
-        className={`ml-auto rounded-2xl px-4 py-2 max-w-[80%] ${
+        className={`ml-auto max-w-[88%] rounded-2xl px-3 py-2 text-sm sm:max-w-[80%] sm:px-4 sm:text-base ${
           hasError
             ? "bg-red-50 border-2 border-red-400 text-red-700"
             : "bg-blue-500 text-white"
@@ -86,25 +87,25 @@ function UserBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-/** 助手消息气泡，包含产品卡片、Markdown 文本、来源和免责声明 */
-function AssistantBubble({ message }: { message: ChatMessage }) {
+/** 助手消息气泡，包含产品卡片、保障详情、Markdown 文本、来源和免责声明 */
+function AssistantBubble({ message, onViewDetail }: { message: ChatMessage; onViewDetail?: (url: string, name: string) => void }) {
   const hasError = !!message.error;
   const hasSources = message.sources && message.sources.length > 0;
   const hasDisclaimer = !!message.disclaimer;
-  const hasProducts = message.products && message.products.length > 0;
-
   return (
     <div className="flex flex-col items-start">
-      {/* 产品推荐卡片（在文字回答之前展示） */}
-      {hasProducts && (
-        <div className="mr-auto max-w-[95%] mb-2">
-          <ProductCardList products={message.products!} />
+      {/* 产品推荐已在吸顶面板展示 */}
+
+      {/* 产品保障详情卡片 */}
+      {message.duties && message.duties.length > 0 && (
+        <div className="mb-2 mr-auto w-full max-w-[94%] sm:max-w-[95%]">
+          <DutyDetailCard productName={message.detailProductName || "产品"} duties={message.duties} />
         </div>
       )}
 
       {/* 消息气泡 — 使用 MarkdownRenderer */}
       <div
-        className={`mr-auto rounded-2xl px-4 py-3 max-w-[85%] overflow-x-auto ${
+        className={`mr-auto max-w-[92%] overflow-x-auto rounded-2xl px-3 py-2.5 text-sm sm:max-w-[85%] sm:px-4 sm:py-3 sm:text-base ${
           hasError
             ? "bg-red-50 border-2 border-red-400 text-red-700"
             : "bg-white border border-gray-200"
@@ -123,29 +124,40 @@ function AssistantBubble({ message }: { message: ChatMessage }) {
 
       {/* 来源列表 */}
       {hasSources && (
-        <div className="mt-2 ml-1 max-w-[80%]">
-          <p className="text-xs text-gray-500 mb-1">来源：</p>
+        <div className="ml-1 mt-2 max-w-[92%] sm:max-w-[80%]">
+          <p className="mb-1 text-xs text-gray-500">来源：</p>
           <ul className="space-y-0.5">
-            {message.sources!.map((source: SourceItem, index: number) => (
-              <li key={index} className="text-xs text-gray-400">
-                <a
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-600 hover:underline"
-                >
-                  {source.title}
-                </a>
-                <span className="ml-1 text-gray-300">— {source.site}</span>
-              </li>
-            ))}
+            {message.sources!.map((source: SourceItem, index: number) => {
+              const sourceHref = source.product_url || source.url;
+              const sourceTitle = source.title || source.url || source.product_url || "来源";
+
+              return (
+                <li key={index} className="text-xs text-gray-400">
+                  {sourceHref ? (
+                    <a
+                      href={sourceHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-600 hover:underline"
+                    >
+                      {sourceTitle}
+                    </a>
+                  ) : (
+                    <span>{sourceTitle}</span>
+                  )}
+                  {source.site && (
+                    <span className="ml-1 text-gray-300">— {source.site}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
 
       {/* 免责声明 */}
       {hasDisclaimer && (
-        <p className="mt-1 ml-1 max-w-[80%] text-[11px] text-gray-400 italic">
+        <p className="ml-1 mt-1 max-w-[92%] text-[11px] text-gray-400 italic sm:max-w-[80%]">
           {message.disclaimer}
         </p>
       )}

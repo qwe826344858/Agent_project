@@ -45,6 +45,20 @@ class Settings(BaseSettings):
     # Postgres
     DATABASE_URL: str = ""
 
+    # ======================================================================
+    # Embedding / RAG Ingestion
+    # ======================================================================
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_API_KEY: str = ""
+    EMBEDDING_API_BASE: str = ""
+    EMBEDDING_TIMEOUT: int = 30
+    EMBEDDING_BATCH_SIZE: int = 16
+
+    INGEST_NAMESPACE: str = "default"
+    INGEST_CHUNK_SIZE: int = 1200
+    INGEST_CHUNK_OVERLAP: int = 200
+    INGEST_MIN_CN_CHARS: int = 50
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

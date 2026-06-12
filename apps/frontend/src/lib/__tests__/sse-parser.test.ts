@@ -9,6 +9,7 @@ import { ReadableStream } from "stream/web";
 Object.assign(globalThis, { TextEncoder, TextDecoder, ReadableStream });
 
 import { parseSSELine, createSSEParser, type SSEHandlers } from "@/lib/sse-parser";
+import type { SSEStatusPayload } from "@/types/chat";
 
 // ============================================================================
 // parseSSELine 测试
@@ -105,6 +106,28 @@ describe("createSSEParser", () => {
     });
   });
 
+  it("应兼容 agent SSE 追踪字段", async () => {
+    const handlers: SSEHandlers = {
+      onStatus: jest.fn(),
+    };
+    const statusPayload: SSEStatusPayload = {
+      stage: "searching",
+      message: "正在调用搜索 Agent",
+      agent_id: "search_agent",
+      trace_id: "trace_123",
+    };
+
+    const stream = textToStream(
+      `event: status\ndata: ${JSON.stringify(statusPayload)}\n\n`
+    );
+
+    const parser = createSSEParser(handlers);
+    await parser(stream);
+
+    expect(handlers.onStatus).toHaveBeenCalledTimes(1);
+    expect(handlers.onStatus).toHaveBeenCalledWith(statusPayload);
+  });
+
   it("应正确分发 delta 事件", async () => {
     const handlers: SSEHandlers = {
       onDelta: jest.fn(),
@@ -128,7 +151,12 @@ describe("createSSEParser", () => {
 
     const sourcesData = {
       items: [
-        { title: "示例文章", url: "https://example.com", site: "example.com" },
+        {
+          title: "示例文章",
+          url: "https://example.com/source",
+          site: "example.com",
+          product_url: "https://example.com/product",
+        },
       ],
     };
 

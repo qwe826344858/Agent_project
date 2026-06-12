@@ -171,3 +171,75 @@ def build_intent_user_prompt(message: str) -> str:
 def build_query_user_prompt(message: str, intent: str) -> str:
     """根据用户消息和识别意图构建搜索词生成阶段的用户 Prompt。"""
     return QUERY_PROMPT_TEMPLATE.format(message=message, intent=intent)
+
+
+# ========== 产品详情提取 Prompt ==========
+
+DETAIL_EXTRACT_SYSTEM_PROMPT = """\
+你是保险产品信息提取专家。你的任务是从保险产品页面文本中准确提取保障项目信息。"""
+
+DETAIL_EXTRACT_PROMPT_TEMPLATE = """\
+请从以下保险产品页面文本中，提取所有保障项目。
+
+【页面文本】
+{cleaned_text}
+
+【提取要求】
+1. 提取每项保障的：名称(name)、保障额度(coverage)、条款摘要(description，不超过100字)
+2. 判断每项是否为可选保障(is_optional)：名称或描述中含"可选""可附加""可加购"的标为 true
+3. 仅提取页面中明确存在的保障项，不要编造或推测
+4. 如果页面中存在增值服务（如绿通、垫付等），合并为一项提取
+
+【输出格式】
+严格输出 JSON，不要包含其他文字：
+{{
+  "product_name": "产品名称",
+  "duties": [
+    {{
+      "name": "保障项名称",
+      "coverage": "保额，如300万、1万、不限",
+      "description": "条款核心内容摘要，100字以内",
+      "is_optional": false
+    }}
+  ]
+}}"""
+
+# ========== 产品详情通俗解读 Prompt ==========
+
+DETAIL_EXPLAIN_SYSTEM_PROMPT = """\
+你是保险产品的通俗解读专家。你的任务是将专业的保障条款翻译成普通用户能理解的大白话。"""
+
+DETAIL_EXPLAIN_PROMPT_TEMPLATE = """\
+用户想了解以下保险产品的保障详情。
+
+产品名称：{product_name}
+保障项目：
+{duties_formatted}
+
+【解读要求】
+1. 每项保障用一句大白话说清"保什么、保多少、什么时候能用"
+2. 区分必选和可选保障，可选项标注【可选】
+3. 重点项用 ⭐ 标注，实用亮点用 💡 标注，注意限制用 ⚠️ 标注
+4. 遇到专业术语用括号补充通俗解释
+5. 最后总结一句："这款产品最适合 xxx，核心优势是 xxx"
+6. 总字数 300-500 字
+
+【禁止】
+1. 不要逐字复述条款原文
+2. 不要输出投保链接
+3. 不要做收益承诺"""
+
+DETAIL_FOLLOWUP_PROMPT_TEMPLATE = """\
+用户正在了解以下保险产品，请基于保障信息回答用户的追问。
+
+产品名称：{product_name}
+保障项目：
+{duties_formatted}
+
+用户追问：{user_question}
+
+【要求】
+1. 仅基于上方保障信息回答，不要编造
+2. 用通俗易懂的话术解释
+3. 如果保障信息中没有相关内容，明确告知用户"该产品的公开信息中未涉及此项"
+4. 回答控制在 100-200 字"""

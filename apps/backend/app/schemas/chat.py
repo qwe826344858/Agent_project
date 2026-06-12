@@ -9,9 +9,12 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     """POST /api/chat 请求体"""
-    message: str = Field(..., min_length=1, description="用户问题")
+    message: str = Field("", description="用户问题（有 action 时可为空）")
     session_id: Optional[str] = Field(None, alias="sessionId", description="会话ID")
     request_id: Optional[str] = Field(None, alias="requestId", description="请求追踪ID")
+    action: Optional[str] = Field(None, description="特殊操作类型，如 product_detail")
+    product_url: Optional[str] = Field(None, alias="productUrl", description="产品详情页URL")
+    product_name: Optional[str] = Field(None, alias="productName", description="产品名称")
 
 
 # ========== 响应模型 ==========
@@ -126,3 +129,29 @@ class SSEProductsPayload(BaseModel):
 class SSEProductsUpdatePayload(BaseModel):
     """SSE products_update 事件载荷"""
     items: list[ProductCard]
+
+
+# ========== 产品保障详情模型 ==========
+
+class DutyItem(BaseModel):
+    """单项保障 — 产品详情页提取"""
+    name: str                    # 保障项名称
+    coverage: str = ""           # 保障额度（如"300万"）
+    description: str = ""        # 条款摘要（100字以内）
+    is_optional: bool = False    # 是否可选
+
+
+class ProductDetail(BaseModel):
+    """产品保障详情（缓存单元）"""
+    product_name: str            # 产品名称
+    product_url: str             # 产品页面 URL
+    platform: str = ""           # 来源平台
+    duties: list[DutyItem] = []  # 保障项目列表
+    cn_char_count: int = 0       # 原始页面中文字符数（校验基线）
+    match_rate: float = 0.0      # 提取匹配率
+
+
+class SSEDetailItemsPayload(BaseModel):
+    """SSE detail_items 事件载荷"""
+    product_name: str
+    duties: list[DutyItem]

@@ -30,6 +30,7 @@ function getTagColor(tag: string) {
 interface ProductCardProps {
   product: ProductCardType;
   index: number;
+  onViewDetail?: (url: string, name: string) => void;
 }
 
 /**
@@ -40,7 +41,7 @@ interface ProductCardProps {
  * - 悬浮上移 + 按下微缩反馈
  * - 全宽 CTA 按钮
  */
-export default function ProductCard({ product, index }: ProductCardProps) {
+export default function ProductCard({ product, index, onViewDetail }: ProductCardProps) {
   return (
     <div
       className="product-card product-card-enter min-w-[260px] max-w-[320px] shrink-0 flex flex-col"
@@ -112,6 +113,18 @@ export default function ProductCard({ product, index }: ProductCardProps) {
         >
           查看详情 <span className="ml-0.5">→</span>
         </a>
+        {onViewDetail && (
+          <button
+            type="button"
+            className="block w-full text-center py-2 mt-2 bg-white hover:bg-gray-50 active:bg-gray-100 text-blue-500 text-sm font-medium rounded-lg border border-blue-200 transition-colors duration-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetail(product.url, product.name);
+            }}
+          >
+            AI解析保障方案
+          </button>
+        )}
       </div>
     </div>
   );

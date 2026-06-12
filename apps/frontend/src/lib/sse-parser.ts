@@ -14,6 +14,7 @@ import type {
   SSEErrorPayload,
   SSEProductsPayload,
   SSEProductsUpdatePayload,
+  SSEDetailItemsPayload,
 } from "@/types/chat";
 
 /** SSE 事件处理回调集合 */
@@ -27,6 +28,7 @@ export interface SSEHandlers {
   // 产品卡片事件
   onProducts?: (data: SSEProductsPayload) => void;
   onProductsUpdate?: (data: SSEProductsUpdatePayload) => void;
+  onDetailItems?: (data: SSEDetailItemsPayload) => void;
 }
 
 /** parseSSELine 的返回值类型 */
@@ -112,6 +114,9 @@ function dispatchEvent(
         break;
       case "products_update":
         handlers.onProductsUpdate?.(parsed as SSEProductsUpdatePayload);
+        break;
+      case "detail_items":
+        handlers.onDetailItems?.(parsed as SSEDetailItemsPayload);
         break;
       default:
         // 未知事件类型，静默忽略
